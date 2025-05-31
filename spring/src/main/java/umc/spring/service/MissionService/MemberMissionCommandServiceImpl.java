@@ -9,6 +9,7 @@ import umc.spring.apiPayload.exception.handler.MissionHandler;
 import umc.spring.converter.MemberMissionConverter;
 import umc.spring.domain.Member;
 import umc.spring.domain.Mission;
+import umc.spring.domain.enums.MissionStatus;
 import umc.spring.domain.mapping.MemberMission;
 import umc.spring.repository.MemberMissionRepository;
 import umc.spring.repository.MemberRepository;
@@ -35,5 +36,29 @@ public class MemberMissionCommandServiceImpl implements MemberMissionCommandServ
 
         MemberMission newMemberMission = MemberMissionConverter.toMemberMission(member, mission);
         return memberMissionRepository.save(newMemberMission);
+    }
+
+
+    @Transactional
+    public MemberMission completeMission(Long memberId, Long missionId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Mission mission = missionRepository.findById(missionId)
+                .orElseThrow(() -> new MissionHandler(ErrorStatus.MISSION_NOT_FOUND));
+
+        MemberMission memberMission = memberMissionRepository.findByMemberAndMission(member, mission)
+                .orElseThrow(() -> new MissionHandler(ErrorStatus.MISSION_NOT_FOUND));
+
+        if (memberMission.getStatus() == MissionStatus.COMPLETE) {
+            throw new MissionHandler(ErrorStatus.MISSION_ALREADY_COMPLETE);
+        }
+
+        if (memberMission.getStatus() != MissionStatus.CHALLENGE) {
+            throw new MissionHandler(ErrorStatus.MISSION_NOT_IN_PROGRESS);
+        }
+
+        memberMission.setStatus(MissionStatus.COMPLETE);
+        return memberMissionRepository.save(memberMission);
     }
 }
