@@ -10,10 +10,23 @@ import java.util.ArrayList;
 
 public class MemberConverter {
 
-    public static MemberResponseDTO.JoinResultDTO toJoinResultDTO(Member member){
+    public static MemberResponseDTO.MemberInfoDTO toMemberInfoDTO(Member member) {
+        return MemberResponseDTO.MemberInfoDTO.builder()
+                .name(member.getName())
+                .email(member.getEmail())
+                .gender(member.getGender().toString())
+                .build();
+    }
+    public static MemberResponseDTO.JoinResultDTO toJoinResultDTO(Member member) {
         return MemberResponseDTO.JoinResultDTO.builder()
                 .memberId(member.getId())
-                .createdAt(LocalDateTime.now())
+                .createdAt(member.getCreatedAt())
+                .build();
+    }
+    public static MemberResponseDTO.LoginResultDTO toLoginResultDTO(Long memberId, String accessToken) {
+        return MemberResponseDTO.LoginResultDTO.builder()
+                .memberId(memberId)
+                .accessToken(accessToken)
                 .build();
     }
 
@@ -39,6 +52,10 @@ public class MemberConverter {
                 .gender(gender)
                 .name(request.getName())
                 .memberPreferList(new ArrayList<>())
+                .email(request.getEmail())
+                .password(request.getPassword())
+                .role(request.getRole())
                 .build();
     }
+
 }

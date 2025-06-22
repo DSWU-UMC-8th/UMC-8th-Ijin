@@ -3,6 +3,8 @@ package umc.spring.web.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,7 @@ import umc.spring.domain.Member;
 import umc.spring.domain.Review;
 import umc.spring.domain.mapping.MemberMission;
 import umc.spring.service.MemberService.MemberCommandService;
+import umc.spring.service.MemberService.MemberQueryService;
 import umc.spring.validation.annotation.CheckPage;
 import umc.spring.service.ReviewService.*;
 import umc.spring.service.MissionService.MissionQueryService;
@@ -35,11 +38,26 @@ public class MemberRestController {
     private final ReviewQueryService reviewQueryService;
     private final MissionQueryService missionQueryService;
     private final MemberMissionCommandService memberMissionCommandService;
+    private final MemberQueryService memberQueryService;
 
-    @PostMapping("/")
+    @GetMapping("/info")
+    @Operation(summary = "유저 내 정보 조회 API - 인증 필요",
+            description = "유저가 내 정보를 조회하는 API입니다.",
+            security = { @SecurityRequirement(name = "JWT TOKEN") }
+    )
+    public ApiResponse<MemberResponseDTO.MemberInfoDTO> getMyInfo(HttpServletRequest request) {
+        return ApiResponse.onSuccess(memberQueryService.getMemberInfo(request));
+    }
+
+    @PostMapping("/join")
     public ApiResponse<MemberResponseDTO.JoinResultDTO> join(@RequestBody @Valid MemberRequestDTO.JoinDto request){
         Member member = memberCommandService.joinMember(request);
         return ApiResponse.onSuccess(MemberConverter.toJoinResultDTO(member));
+    }
+    @PostMapping("/login")
+    @Operation(summary = "유저 로그인 API",description = "유저가 로그인하는 API입니다.")
+    public ApiResponse<MemberResponseDTO.LoginResultDTO> login(@RequestBody @Valid MemberRequestDTO.LoginRequestDTO request) {
+        return ApiResponse.onSuccess(memberCommandService.loginMember(request));
     }
 
 
