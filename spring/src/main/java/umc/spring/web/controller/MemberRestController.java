@@ -54,12 +54,16 @@ public class MemberRestController {
         Member member = memberCommandService.joinMember(request);
         return ApiResponse.onSuccess(MemberConverter.toJoinResultDTO(member));
     }
-    @PostMapping("/login")
-    @Operation(summary = "유저 로그인 API",description = "유저가 로그인하는 API입니다.")
-    public ApiResponse<MemberResponseDTO.LoginResultDTO> login(@RequestBody @Valid MemberRequestDTO.LoginRequestDTO request) {
-        return ApiResponse.onSuccess(memberCommandService.loginMember(request));
-    }
 
+    @PostMapping("/login")
+    @Operation(summary = "유저 로그인 API", description = "유저가 로그인하는 API입니다.")
+    public ApiResponse<MemberResponseDTO.LoginResultDTO> login(
+            @RequestBody @Valid MemberRequestDTO.LoginRequestDTO request
+    ) {
+        return ApiResponse.onSuccess(
+                memberCommandService.loginMember(request)
+        );
+    }
 
     @GetMapping("/{memberId}/reviews")
     @Operation(summary = "내가 작성한 리뷰 목록 조회 API", description = "특정 회원이 작성한 리뷰들의 목록을 조회하는 API이며, 페이징을 포함합니다. 한 페이지당 10개씩 조회됩니다.")

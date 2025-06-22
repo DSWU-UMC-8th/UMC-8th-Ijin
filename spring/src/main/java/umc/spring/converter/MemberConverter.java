@@ -5,7 +5,6 @@ import umc.spring.apiPayload.code.MemberResponseDTO;
 import umc.spring.domain.Member;
 import umc.spring.domain.enums.Gender;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class MemberConverter {

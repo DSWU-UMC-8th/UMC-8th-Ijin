@@ -1,5 +1,94 @@
 package umc.spring.service.MemberService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import umc.spring.apiPayload.code.MemberRequestDTO;
+import umc.spring.apiPayload.code.MemberResponseDTO;
+import umc.spring.apiPayload.code.status.ErrorStatus;
+import umc.spring.apiPayload.exception.handler.FoodCategoryHandler;
+import umc.spring.apiPayload.exception.handler.MemberHandler;
+import umc.spring.converter.MemberConverter;
+import umc.spring.converter.MemberPreferConverter;
+import umc.spring.domain.FoodCategory;
+import umc.spring.domain.Member;
+import umc.spring.domain.mapping.MemberPrefer;
+import umc.spring.repository.FoodCategoryRepository;
+import umc.spring.repository.MemberRepository;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class MemberCommandServiceImpl implements MemberCommandService {
+
+    private final MemberRepository memberRepository;
+    private final FoodCategoryRepository foodCategoryRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Override
+    @Transactional
+    public Member joinMember(MemberRequestDTO.JoinDto request) {
+        Member newMember = MemberConverter.toMember(request);
+        newMember.encodePassword(passwordEncoder.encode(request.getPassword()));
+
+        List<FoodCategory> foodCategoryList = request.getPreferCategory().stream()
+                .map(category -> foodCategoryRepository.findById(category)
+                        .orElseThrow(() -> new FoodCategoryHandler(ErrorStatus.FOOD_CATEGORY_NOT_FOUND)))
+                .collect(Collectors.toList());
+
+        List<MemberPrefer> memberPreferList = MemberPreferConverter.toMemberPreferList(foodCategoryList);
+        memberPreferList.forEach(memberPrefer -> memberPrefer.setMember(newMember));
+
+        return memberRepository.save(newMember);
+    }
+
+    @Override
+    public MemberResponseDTO.LoginResultDTO loginMember(MemberRequestDTO.LoginRequestDTO request) {
+        HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
+                .getRequest();
+
+        Member member = memberRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getPassword(), member.getPassword())) {
+            throw new MemberHandler(ErrorStatus.INVALID_PASSWORD);
+        }
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                member.getEmail(),
+                null,
+                Collections.singleton(new SimpleGrantedAuthority(member.getRole().name()))
+        );
+
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        securityContext.setAuthentication(authentication);
+
+        HttpSession session = httpRequest.getSession(true);
+        session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
+
+        return MemberConverter.toLoginResultDTO(
+                member.getId(),
+                session.getId()
+        );
+    }
+}
+
+/*
+package umc.spring.service.MemberService;
+
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -53,7 +142,8 @@ public class MemberCommandServiceImpl implements MemberCommandService{
         return memberRepository.save(newMember);
     }
 
-    private final JwtTokenProvider jwtTokenProvider;
+    */
+/*private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     public MemberResponseDTO.LoginResultDTO loginMember(MemberRequestDTO.LoginRequestDTO request) {
@@ -76,5 +166,6 @@ public class MemberCommandServiceImpl implements MemberCommandService{
                 member.getId(),
                 accessToken
         );
-    }
-}
+    }*//*
+
+}*/
